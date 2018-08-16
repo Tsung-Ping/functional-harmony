@@ -2,7 +2,7 @@
 
 The BPS-FH dataset consists of the symbolic musical data and functional harmony annotations of the 1st movements of Beethoven's 32 piano sonatas.
 
-Every piece contins 5 labels, including note events, beats, donw beats, chords, and phrases.
+Every piece contins 5 labels, including 1) note events, 2) beats, 3) donw beats, 4) chords, and 5) phrases.
 
 **Notes Events**
 
