@@ -12,7 +12,7 @@ class STL_BLSTM_RNNModel(object):
                  n_steps=64,
                  n_hidden_units=1024,
                  learning_rate=1e-4,
-                 L2_beta=1e-4,
+                 L2_beta=1e-3,
                  dropout_rate=0.5,
                  use_crf=True):
 
