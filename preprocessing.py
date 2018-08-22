@@ -373,7 +373,6 @@ def prepare_input_data(segments_pianoroll, segments_label, hop=32, num_steps=64,
 
 def split_input_data(input_segments, input_labels):
 
-    ## tChord_data_mirex_Mm_new
     train_indices = [4, 11, 16, 20, 26, 31, 3, 8, 12, 17, 23, 21, 27, 29, 30, 10, 1, 2]
     valid_indices = [7, 18, 28, 15, 25, 5, 19]
     test_indices = [0, 13, 22, 14, 19, 24, 6]
