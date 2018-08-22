@@ -29,7 +29,6 @@ class STL_BLSTM_RNNModel(object):
         self._train_writer = None
         self._valid_writer = None
 
-
         self._L2_bata = L2_beta
         self._dropout_rate = dropout_rate
         self._learning_rate = learning_rate
@@ -62,7 +61,6 @@ class STL_BLSTM_RNNModel(object):
 
     def network(self, reuse):
 
-        # RNN cell
         with tf.name_scope('LSTM_cell'):
             encoder_cell_fw = LSTMCell(num_units=self._hidden_size)
             encoder_cell_bw = LSTMCell(num_units=self._hidden_size)
@@ -72,8 +70,6 @@ class STL_BLSTM_RNNModel(object):
             encoder_cell_fw = DropoutWrapper(encoder_cell_fw, output_keep_prob=keep_prob)
             encoder_cell_bw = DropoutWrapper(encoder_cell_bw, output_keep_prob=keep_prob)
 
-
-        # output_x in shape (batch_size, n_steps, n_hiddne_units)
         with tf.name_scope('LSTM_layer'):
             # bi-LSTM
             (output_fw, output_bw), (state_fw, state_bw) = tf.nn.bidirectional_dynamic_rnn(encoder_cell_fw,
@@ -81,11 +77,11 @@ class STL_BLSTM_RNNModel(object):
                                                                                            self.batch_in,
                                                                                            time_major=False,
                                                                                            dtype=tf.float32)
-            rnn_outputs = tf.concat([output_fw, output_bw], axis=-1)  # shape = [batch, n_steps, 2*n_hiddne_units]
+            rnn_outputs = tf.concat([output_fw, output_bw], axis=-1) # shape = [batch, n_steps, 2*n_hiddne_units]
 
         with tf.name_scope('Dense_layer'):
-            logits = tf.layers.dense(rnn_outputs, self._n_classes)  # shape = [batch, n_steps, n_classes]
-            predictions = tf.argmax(logits, axis=-1, output_type=tf.int32)  # shape = [batch, n_steps]
+            logits = tf.layers.dense(rnn_outputs, self._n_classes) # shape = [batch, n_steps, n_classes]
+            predictions = tf.argmax(logits, axis=-1, output_type=tf.int32) # shape = [batch, n_steps]
 
         with tf.name_scope('loss'):
             if not self._use_crf:
@@ -111,9 +107,10 @@ class STL_BLSTM_RNNModel(object):
 
         with tf.name_scope('accuracy'):
             if not self._use_crf:
-                correct_predictions = tf.equal(predictions, self.batch_out) # use softmax
+                correct_predictions = tf.equal(predictions, self.batch_out)
             else:
-                correct_predictions = tf.equal(viterbi_sequence, self.batch_out) # use crf
+                # use crf
+                correct_predictions = tf.equal(viterbi_sequence, self.batch_out)
             accuracy = tf.reduce_mean(tf.cast(correct_predictions, tf.float32))
         tf.summary.scalar('Accuracy', accuracy)
 
