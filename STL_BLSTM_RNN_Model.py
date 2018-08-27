@@ -4,7 +4,6 @@ path = os.path.dirname(os.path.abspath(__file__))
 import tensorflow as tf
 from tensorflow.contrib.rnn import LSTMCell, DropoutWrapper
 
-
 class STL_BLSTM_RNNModel(object):
     def __init__(self,
                  feature_size=1952,
