@@ -231,8 +231,6 @@ if __name__ == "__main__":
     [x_train, x_valid, x_test, y_train, y_valid, y_test] = get_training_data()
     n_sequences_train = x_train.shape[0]
 
-
-
     # create model
     tf.reset_default_graph()
     network = STL_BLSTM_RNNModel(feature_size=1952,
@@ -243,7 +241,6 @@ if __name__ == "__main__":
                                  L2_beta=1e-3,
                                  dropout_rate=0.5,
                                  use_crf=False)
-
 
     variable_path = path + "\\Training\\training_model_ckpt"
     best_variable_path = path + "\\Training\\best_training_model_ckpt"
