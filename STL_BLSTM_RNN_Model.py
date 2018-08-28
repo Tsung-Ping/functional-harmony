@@ -19,7 +19,7 @@ class STL_BLSTM_RNNModel(object):
                  learning_rate=1e-4,
                  L2_beta=1e-4,
                  dropout_rate=0.5,
-                 use_crf=True,
+                 use_crf=False,
                  task='chord_symbol'):
 
         self._feature_size = feature_size
