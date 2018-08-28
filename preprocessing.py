@@ -10,7 +10,7 @@ def strided_axis1(a, window, hop):
 
     # Zero-padding
     npad = (a.shape[1] - window) % hop + 1
-    if npad != 0:
+    if npad != 0 and hop != 1:
         b = np.lib.pad(a, ((0, 0), (0,npad)), 'constant', constant_values=0)
     else:
         b = np.array(a)
@@ -197,7 +197,7 @@ def r2tconvert(chords):
 
     return rtchords
 
-def segment_pianorolls(pianorolls, tdeviation, chord_labels, resolution=8, wsize=32, hsize=4):
+def segment_pianorolls(pianorolls, tdeviation, chord_labels, resolution=8, wsize=32, hsize=4, label_type=None):
     """
     Segment each pianoroll.
     :param pianorolls:
@@ -206,6 +206,7 @@ def segment_pianorolls(pianorolls, tdeviation, chord_labels, resolution=8, wsize
     :param resolution: time resolution,default=8 (32th note as 1unit in pianoroll)
     :param wsize: window size,  default= 32 (4 beats)
     :param hsize: hop size, default = 4 (half a beat)
+    :param label_type: string, 'chord_symbol' and 'chord_function'  are valid
     :return:
     """
 
@@ -219,12 +220,12 @@ def segment_pianorolls(pianorolls, tdeviation, chord_labels, resolution=8, wsize
         for m in range(len(pianoroll_aug)):
             segments = strided_axis1(pianoroll_aug[m], window=wsize, hop=hsize).astype(np.float32) # Split pianoroll into segments with shape = [num_segments, 61, wsize]
             segments_reshape = [segments[i, :, :].reshape(61 * wsize) for i in range(segments.shape[0])] # reshape segments, new shape = [num_segments, 61*wsize]
+
             # Normalize each segment
             for i, v in enumerate(segments_reshape):
                 if np.std(v) != 0:
                     segments_reshape[i] = stats.zscore(v)
             segments_pianoroll[m][p] = segments_reshape
-
 
         # Get corresponding chord label (only chord symbol) for each segment
         labels = []
@@ -233,20 +234,27 @@ def segment_pianorolls(pianorolls, tdeviation, chord_labels, resolution=8, wsize
         for n in range(num_segments):
             sonset = n*hsize*(1/resolution) - td # onset time of the segment
             send = sonset + wsize*(1/resolution) # end time of the segment
-            scenter = (sonset + send)/2
+            scenter = max(0, (sonset + send)/2)
             # print(fonset, fend, fcenter)
             label = chord_labels[p][(chord_labels[p]['onset'] <= scenter) & (chord_labels[p]['end'] > scenter)]
             if len(label) != 0:
                 label = label[0]
             else:
-                print('Error: Cannot read label !')
+                print('Error: Cannot read label!')
+                print('piece %d' % p)
                 print(label)
-                print(scenter)
                 quit()
             labels.append(label)
 
-        labels_onehot = tchord2onehot(labels) # convert labels to one hot vectors
-        labels_aug = augment_tchords(labels_onehot)
+        if label_type == 'chord_symbol':
+            labels_onehot = tchord2onehot(labels) # convert labels to one hot vectors
+            labels_aug = augment_tchords(labels_onehot)
+        elif label_type == 'chord_function':
+            labels_onehot = rchord2onehot(labels)  # convert labels to one hot vectors
+            labels_aug = augment_rchords(labels_onehot)
+        else:
+            print('LabelTypeError: %s,' % label_type, 'label_type should be \'chord_symbol\' or \'chord_function\'.')
+            quit()
         for m in range(len(labels_aug)):
             segments_label[m][p] = labels_aug[m]
 
@@ -305,8 +313,8 @@ def tchord2onehot(labels):
             quality = tchord[2:]
 
         chord_hot = root_template.index(root)
-        if quality in ['M', 'm']:
-            if quality == 'm':
+        if quality in ['M', 'm', 'M7', 'm7', '7']:
+            if quality == 'm' or quality == 'm7':
                 chord_hot += 12
         else:
             chord_hot = 24
@@ -315,6 +323,79 @@ def tchord2onehot(labels):
         onehots.append(onehot)
 
     return onehots
+
+def rchord2onehot(chords):
+
+    # Translate chords to onehot vectors
+    tonic_template = ['C', 'C+', 'D', 'D+', 'E', 'F', 'F+', 'G', 'G+', 'A', 'A+', 'B']
+    tonic_translation_dict = {'C-':'B', 'D-':'C+', 'E-':'D+', 'E+':'F', 'F-':'E', 'G-':'F+', 'A-':'G+', 'B-':'A+', 'B+':'C'}
+    quality_template = ['M', 'm', 'd', 'a', 'M7', 'm7', 'D7', 'd7', 'h7', 'a6']
+    one_hot_vectors = []
+    for chord in chords:
+
+        # Get attributes in chord labels
+        key = str(chord['key'])
+        degree = str(chord['degree'])
+        quality = str(chord['quality'])
+        inversoin = int(chord['inversion'])
+
+        # Translate key to one-hot vector
+        key_vector = [0 for _ in range(24)] # 24 major and minor modes, 0-11 for major keys, 12-23 for minor keys
+        tonic = key.capitalize()
+        if tonic in tonic_translation_dict.keys():
+            tonic = tonic_translation_dict[tonic]
+        tonic_hot = tonic_template.index(tonic)
+        # check mode
+        if key[0].islower():
+            tonic_hot += 12
+        key_vector[tonic_hot] = 1
+
+        # Translate degree to one-hot vector
+        degree_numerator_vector = [0 for _ in range(21)] # (7 diatonics *  3 chromatics  = 21: {0-6 diatonic, 7-13 sharp, 14-20 flat})
+        degree_denominator_vector = [0 for _ in range(21)] # (7 diatonics *  3 chromatics  = 21: {0-6 diatonic, 7-13 sharp, 14-20 flat})
+        # check numerator and denominator of degree
+        if '/' not in degree:
+            denominator = 1
+            numerator = translate_degree(degree)
+        else:
+            numarator_str = degree.split('/')[0]
+            denominator_str = degree.split('/')[1]
+            numerator = translate_degree(numarator_str)
+            denominator = translate_degree(denominator_str)
+        degree_numerator_vector[numerator-1], degree_denominator_vector[denominator-1] = 1, 1
+
+        # Translate quality to one-hot vector
+        quality_vector = [0 for _ in range(10)] # {'M': 0, 'm': 1, 'd': 2, 'a': 3, 'M7': 4, 'm7': 5, 'D7': 6, 'd7': 7, 'h7': 8, 'a6': 9}
+        quality_hot = quality_template.index(quality)
+        quality_vector[quality_hot] = 1
+
+        # Translate inversion to one-hot vector
+        inversoin_vector = [0 for _ in range(4)] # {'ori.':0, '1st':1, '2nd', 2, '3rd': 3}
+        inversoin_hot = inversoin
+        inversoin_vector[inversoin_hot] = 1
+
+        all_vectors = (key_vector,
+                       degree_denominator_vector,
+                       degree_numerator_vector,
+                       quality_vector,
+                       inversoin_vector)
+
+        one_hot_vectors.append(all_vectors)
+
+
+    dt = [('key', object), ('pri_deg', object), ('sec_deg', object), ('quality', object), ('inversion', object)]
+    return np.array(one_hot_vectors, dtype=dt)
+
+def translate_degree(degree_str):
+
+    if ('+' not in degree_str and '-' not in degree_str) or ('+' in degree_str and degree_str[1] == '+'):
+        degree_hot = int(degree_str[0])
+    elif degree_str[0] == '-':
+        degree_hot = int(degree_str[1]) + 14
+    elif degree_str[0] == '+':
+        degree_hot = int(degree_str[1]) + 7
+
+    return degree_hot
 
 def augment_tchords(labels_onehot):
     """
@@ -340,7 +421,24 @@ def augment_tchords(labels_onehot):
 
     return labels_aug
 
-def prepare_input_data(segments_pianoroll, segments_label, hop=32, num_steps=64, feature_size=61*32):
+def augment_rchords(labels_onehot):
+
+    labels_aug = [None for _ in range(12)]
+    for m in range(len(labels_aug)):
+        temp = np.array(labels_onehot)
+        for i in range(temp.shape[0]):
+            key = list(temp[i]['key'][:12]) if any(temp[i]['key'][:12]) else list(temp[i]['key'][12:])
+            mode = 0 if any(temp[i]['key'][:12]) else 1 # major -> 0, minor -> 1
+            if m < 7:
+                shift = m
+            else:
+                shift = m - 12
+            temp[i]['key'] = list(np.roll(key, shift=shift)) + [0 for _ in range(12)] if mode == 0 else [0 for _ in range(12)] + list(np.roll(key, shift=shift))
+        labels_aug[m] = temp
+
+    return labels_aug
+
+def prepare_input_data(segments_pianoroll, segments_label, hop=32, num_steps=64, feature_size=61*32, label_type=None):
     """
     Rearrange segments_pianoroll and segments_label into the format [num_sequences, num_steps, feature_size] and [num_sequences, num_steps, num_classes] respectively
     :param segments_pianoroll:
@@ -348,6 +446,7 @@ def prepare_input_data(segments_pianoroll, segments_label, hop=32, num_steps=64,
     :param hop: hop size of sequences, default = 32 (4 beats)
     :param num_steps: number of RNN time steps
     :param feature_size: input feature size
+    :param label_type: string, 'chord_symbol' and 'chord_function'  are valid
     :return: input_segments, input_labels
     """
 
@@ -360,19 +459,35 @@ def prepare_input_data(segments_pianoroll, segments_label, hop=32, num_steps=64,
             if (len(indices) - num_steps) / hop != 0:
                 seq_indices.append(indices[-num_steps:])
             num_sequences = len(seq_indices)
-            inputs = np.zeros(shape=(num_sequences, num_steps, feature_size), dtype=np.float32)
-            labels = np.zeros(shape=(num_sequences, num_steps), dtype=np.int32)
-            for n in range(num_sequences):
-                inputs[n, :, :] = [segments_pianoroll[m][p][index] for index in seq_indices[n]]
-                labels[n, :] = [np.argmax(vector) for vector in segments_label[m][p][seq_indices[n]]]
+
+            if label_type == 'chord_symbol':
+                inputs = np.zeros(shape=(num_sequences, num_steps, feature_size), dtype=np.float32)
+                labels = np.zeros(shape=(num_sequences, num_steps), dtype=np.int32)
+                for n in range(num_sequences):
+                    inputs[n, :, :] = [segments_pianoroll[m][p][index] for index in seq_indices[n]]
+                    labels[n, :] = [np.argmax(vector) for vector in segments_label[m][p][seq_indices[n]]]
+            elif label_type == 'chord_function':
+                inputs = np.zeros(shape=(num_sequences, num_steps, feature_size), dtype=np.float32)
+                dt = [('key', 'int'), ('pri_deg', 'int'), ('sec_deg', 'int'), ('quality', 'int'), ('inversion', 'int')]
+                labels = np.zeros(shape=(num_sequences, num_steps), dtype=dt)
+                for n in range(num_sequences):
+                    inputs[n, :, :] = [segments_pianoroll[m][p][index] for index in seq_indices[n]]
+                    labels[n, :]['key'] = [np.argmax(vector) for vector in segments_label[m][p]['key'][seq_indices[n]]]
+                    labels[n, :]['pri_deg'] = [np.argmax(vector) for vector in segments_label[m][p]['pri_deg'][seq_indices[n]]]
+                    labels[n, :]['sec_deg'] = [np.argmax(vector) for vector in segments_label[m][p]['sec_deg'][seq_indices[n]]]
+                    labels[n, :]['quality'] = [np.argmax(vector) for vector in segments_label[m][p]['quality'][seq_indices[n]]]
+                    labels[n, :]['inversion'] = [np.argmax(vector) for vector in segments_label[m][p]['inversion'][seq_indices[n]]]
+            else:
+                print('LabelTypeError: %s,' % label_type, 'label_type should be \'chord_symbol\' or \'chord_function\'.')
+                quit()
             input_segments[m][p] = inputs
             input_labels[m][p] = labels
 
     return input_segments, input_labels
 
-
 def split_input_data(input_segments, input_labels):
 
+    # split 32 pieces into three sets
     train_indices = [4, 11, 16, 20, 26, 31, 3, 8, 12, 17, 23, 21, 27, 29, 30, 10, 1, 2]
     valid_indices = [7, 18, 28, 15, 25, 5, 19]
     test_indices = [0, 13, 22, 14, 19, 24, 6]
@@ -387,21 +502,38 @@ def split_input_data(input_segments, input_labels):
 
     return inputs_train, inputs_valid, inputs_test, labels_train, labels_valid, labels_test
 
-def get_training_data():
+def get_training_data(label_type=None):
+    """
+    x is input data, y is label;
+    x has the shape [num_sequences, num_steps, feature_size];
+    if label_type == 'chord_symbol',
+        y has the shape [num_sequences, num_steps];
+    if label_type == 'chord_function',
+        y has the shape [num_sequences, num_steps],
+        and chord functions can be access by y[num_sequences, num_steps][function_name],
+        where 'key', 'pri_deg', 'sec_deg', 'quality', 'inversion' are valid function_name
+    """
 
-    print("Preprecessing the dataset...")
+    print("Preprocessing the BPS-FH dataset:")
+
+    if label_type not in ['chord_symbol', 'chord_function']:
+        print('LabelTypeError: %s,' % label_type, 'label_type should be \'chord_symbol\' or \'chord_function\'.')
+        quit()
 
     path = os.path.dirname(os.path.abspath(__file__)) + '\\BPS_FH_Dataset\\'
-
+    print('load data...')
     pianorolls, tdeviation = load_notes(directory=path)
     chord_labels = load_chord_labels(directory=path)
-    segments_pianoroll, segments_label = segment_pianorolls(pianorolls, tdeviation, chord_labels)
-    input_segments, input_labels = prepare_input_data(segments_pianoroll, segments_label, hop=32)
+    print('segment data...')
+    segments_pianoroll, segments_label = segment_pianorolls(pianorolls, tdeviation, chord_labels, wsize=32, hsize=4, label_type=label_type)
+    print('prepare data...')
+    input_segments, input_labels = prepare_input_data(segments_pianoroll, segments_label, hop=32, num_steps=64, feature_size=1952, label_type=label_type)
+    print('split data...')
     x_train, x_valid, x_test, y_train, y_valid, y_test = split_input_data(input_segments, input_labels)
 
     lens = [len(segments) for segments in segments_pianoroll[0]]
     total_segments = sum([sum([len(segments) for segments in segments_pianoroll[m]]) for m in range(len(segments_pianoroll))])
-    total_labels = sum([sum([len(labels) for labels in segments_label[m]]) for m in range(len(segments_label))])
+    # total_labels = sum([sum([len(labels) for labels in segments_label[m]]) for m in range(len(segments_label))])
     print('num_segments in each piece =', lens)
     print('total_segments =', total_segments)
     sets = [x_train, x_valid, x_test, y_train, y_valid, y_test]
@@ -409,10 +541,16 @@ def get_training_data():
 
     return sets
 
-
 if __name__ == '__main__':
 
-    [x_train, x_valid, x_test, y_train, y_valid, y_test] = get_training_data()
+    """
+    x: the input data with shape = [num_sequences, num_steps, feature_size]
+    y: the ground truth with shape = [num_sequences, num_steps]
+    label_type: 'chord_symbol' for STL_BLSTM_RNNModel, and 'chord_function' for MTL_BLSTM_RNNModel 
+    """
+    [x_train, x_valid, x_test, y_train, y_valid, y_test] = get_training_data(label_type='chord_symbol')
+
+
 
 
 
