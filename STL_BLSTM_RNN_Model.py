@@ -249,7 +249,6 @@ if __name__ == "__main__":
                                  learning_rate=1e-4,
                                  L2_beta=1e-3,
                                  dropout_rate=0.5,
-                                 use_crf=False,
                                  task='chord_symbol')
 
     variable_path = path + "\\Training\\training_model_ckpt"
