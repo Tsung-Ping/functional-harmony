@@ -243,8 +243,8 @@ if __name__ == "__main__":
 
     # create model
     tf.reset_default_graph()
-    network = STL_BLSTM_RNNModel(feature_size=61,
-                                 n_steps=256,
+    network = STL_BLSTM_RNNModel(feature_size=1952,
+                                 n_steps=64,
                                  n_hidden_units=1024,
                                  learning_rate=1e-4,
                                  L2_beta=1e-3,
