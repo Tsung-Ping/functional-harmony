@@ -161,7 +161,7 @@ class MTL_BLSTM_RNNModel(object):
 
         params:
         ---
-        batch_in: a 3-D numpy array. The dimensions should be [batch_size, num_timesteps, feature_size]
+        batch_in: a 3-D numpy array. The dimensions should be [batch_size, n_steps, feature_size]
         batch_out: a 2-D dimensional numpy array. The dimensions should be [batch_size, n_steps, n_classes]
         variable_path: the path to which variable values will be saved and/or loaded
         load_vars_from_disk: bool, whether to load variables prior to training
@@ -212,7 +212,6 @@ class MTL_BLSTM_RNNModel(object):
 
         if save_vars_to_disk:
             self.save_variables(variable_path, to_print=True)
-
 
     def predict(self, batch_in, batch_out, variable_path='./mtl_blstm_rnn_ckpt', step=0, is_valid=False):
         """
@@ -269,7 +268,7 @@ if __name__ == "__main__":
     import time
     import random
     import numpy as np
-    # from preprocessing import get_training_data
+    from preprocessing import get_training_data
 
     # Prepare training data
     [x_train, x_valid, x_test, y_train, y_valid, y_test] = get_training_data(label_type='chord_function')
