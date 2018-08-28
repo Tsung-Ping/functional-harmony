@@ -4,21 +4,32 @@ path = os.path.dirname(os.path.abspath(__file__))
 import tensorflow as tf
 from tensorflow.contrib.rnn import LSTMCell, DropoutWrapper
 
+n_output_classes = {'chord_symbol': 25,
+                    'key': 24,
+                    'pri_deg': 21,
+                    'sec_deg': 21,
+                    'quality': 10,
+                    'inversion': 4}
+
 class STL_BLSTM_RNNModel(object):
     def __init__(self,
                  feature_size=1952,
-                 n_classes=25,
                  n_steps=64,
                  n_hidden_units=1024,
                  learning_rate=1e-4,
-                 L2_beta=1e-3,
+                 L2_beta=1e-4,
                  dropout_rate=0.5,
-                 use_crf=True):
+                 use_crf=True,
+                 task='chord_symbol'):
 
         self._feature_size = feature_size
-        self._n_classes = n_classes
         self._n_steps = n_steps
         self._hidden_size = n_hidden_units
+        self._task = task
+        try:
+            self._n_classes = n_output_classes[self._task]
+        except KeyError as e:
+            print('Task Error:', e, 'Task should be one of the following: \'chord_symbol\', \'key\', \'pri_deg\', \'sec_deg\', \'quality\', \'inversion\'.')
 
         self._session = None
         self._graph = None
@@ -58,8 +69,9 @@ class STL_BLSTM_RNNModel(object):
         K = inputs.get_shape().as_list()[-1] # number of channels
         return ((1 - epsilon) * inputs) + (epsilon / K)
 
-    def network(self, reuse):
+    def network(self):
 
+        # RNN cell
         with tf.name_scope('LSTM_cell'):
             encoder_cell_fw = LSTMCell(num_units=self._hidden_size)
             encoder_cell_bw = LSTMCell(num_units=self._hidden_size)
@@ -69,6 +81,7 @@ class STL_BLSTM_RNNModel(object):
             encoder_cell_fw = DropoutWrapper(encoder_cell_fw, output_keep_prob=keep_prob)
             encoder_cell_bw = DropoutWrapper(encoder_cell_bw, output_keep_prob=keep_prob)
 
+
         with tf.name_scope('LSTM_layer'):
             # bi-LSTM
             (output_fw, output_bw), (state_fw, state_bw) = tf.nn.bidirectional_dynamic_rnn(encoder_cell_fw,
@@ -76,11 +89,11 @@ class STL_BLSTM_RNNModel(object):
                                                                                            self.batch_in,
                                                                                            time_major=False,
                                                                                            dtype=tf.float32)
-            rnn_outputs = tf.concat([output_fw, output_bw], axis=-1) # shape = [batch, n_steps, 2*n_hiddne_units]
+            rnn_outputs = tf.concat([output_fw, output_bw], axis=-1)  # shape = [batch, n_steps, 2*n_hiddne_units]
 
-        with tf.name_scope('Dense_layer'):
-            logits = tf.layers.dense(rnn_outputs, self._n_classes) # shape = [batch, n_steps, n_classes]
-            predictions = tf.argmax(logits, axis=-1, output_type=tf.int32) # shape = [batch, n_steps]
+        with tf.name_scope('Output_projection_layer'):
+            logits = tf.layers.dense(rnn_outputs, self._n_classes)  # shape = [batch, n_steps, n_classes]
+            predictions = tf.argmax(logits, axis=-1, output_type=tf.int32)  # shape = [batch, n_steps]
 
         with tf.name_scope('loss'):
             if not self._use_crf:
@@ -95,7 +108,6 @@ class STL_BLSTM_RNNModel(object):
                 viterbi_sequence, viterbi_score = tf.contrib.crf.crf_decode(potentials=logits, transition_params=transition_params, sequence_length=sequence_lens)
                 loss_1 = tf.reduce_mean(-log_likelihood)
 
-
             # L2 norm regularization
             vars = tf.trainable_variables()
             L2_regularizer = self._L2_bata * tf.add_n([tf.nn.l2_loss(v) for v in vars if 'bias' not in v.name])
@@ -106,10 +118,9 @@ class STL_BLSTM_RNNModel(object):
 
         with tf.name_scope('accuracy'):
             if not self._use_crf:
-                correct_predictions = tf.equal(predictions, self.batch_out)
+                correct_predictions = tf.equal(predictions, self.batch_out) # use softmax
             else:
-                # use crf
-                correct_predictions = tf.equal(viterbi_sequence, self.batch_out)
+                correct_predictions = tf.equal(viterbi_sequence, self.batch_out) # use crf
             accuracy = tf.reduce_mean(tf.cast(correct_predictions, tf.float32))
         tf.summary.scalar('Accuracy', accuracy)
 
@@ -209,7 +220,7 @@ class STL_BLSTM_RNNModel(object):
 
     def _get_graph(self):
         if self._graph is None:
-            self._graph = self.network(reuse=False)
+            self._graph = self.network()
         return self._graph
 
     def _load_vars(self, variable_path):
@@ -227,19 +238,19 @@ if __name__ == "__main__":
     from preprocessing import get_training_data
 
     # Prepare training data
-    [x_train, x_valid, x_test, y_train, y_valid, y_test] = get_training_data()
+    [x_train, x_valid, x_test, y_train, y_valid, y_test] = get_training_data(label_type='chord_symbol')
     n_sequences_train = x_train.shape[0]
 
     # create model
     tf.reset_default_graph()
-    network = STL_BLSTM_RNNModel(feature_size=1952,
-                                 n_classes=25,
-                                 n_steps=64,
+    network = STL_BLSTM_RNNModel(feature_size=61,
+                                 n_steps=256,
                                  n_hidden_units=1024,
                                  learning_rate=1e-4,
                                  L2_beta=1e-3,
                                  dropout_rate=0.5,
-                                 use_crf=False)
+                                 use_crf=False,
+                                 task='chord_symbol')
 
     variable_path = path + "\\Training\\training_model_ckpt"
     best_variable_path = path + "\\Training\\best_training_model_ckpt"
