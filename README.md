@@ -1,6 +1,7 @@
 # Beethoven Piano Sonata with Function Harmony (BPS-FH) dataset
 
 The BPS-FH dataset consists of the symbolic musical data and functional harmony annotations of the 1st movements from Beethoven's 32 piano sonatas. The dataset can be used for functional harmony recognition, and also for symbolic cohrd estimation. More details can be found in the paper: 
+
 Tsung-Ping Chen and Li Su, “Functional Harmony Recognition with Multi-task Recurrent Neural Networks,”  International Society of Music Information Retrieval Conference (ISMIR), September 2018. (http://ismir2018.ircam.fr/doc/pdfs/178_Paper.pdf)
 
 
