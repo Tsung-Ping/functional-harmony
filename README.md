@@ -19,3 +19,11 @@ The ontime of beats and down beats.
 **Chords**
 
 The columns represent onset, offset, key, degree, quality, inversion, Roman numeral notation.
+
+--
+
+# Taking Form 
+
+For users who are interested in musical forms, you are recommended to convert the annotations in the BPS-FH dataset by the parser provided in https://github.com/MarkGotham/Taking-Form.
+
+An converted example is provided in the folder "Taking Form."
