@@ -1,0 +1,129 @@
+Composer: Beethoven
+Title: Piano Sonata 01, Movement 1
+Analyst: Tsung-Ping Chen and Li Su, BPS dataset (ISMIR 2018), see https://github.com/Tsung-Ping/functional-harmony
+Note: Converted by Mark Gotham. Please alert me to any clear conversion errors.
+
+m0 b3 f: i
+m3 b1 V65
+m5 b1 i
+m6 b1 V43
+m7 b1 i6 b2 ii6
+m8 b1 V b3 A-: iii
+m11 b1 IV65
+m12 b1 ii7
+m13 b1 V43
+m14 b1 I
+m15 b1 ii6 b2 V65/V
+m16 b1 V
+m17 b1 ii6 b2 V65/V
+m18 b1 V
+m19 b1 ii6 b2 V65/V
+m20 b1 V b3 V7
+m22 b2 I64 b3 V7
+m24 b2 I64 b3 V7
+m25 b2 V42
+m26 b1 I6 b2 V6
+m27 b1 I b2 vii6/V
+m28 b1 V b2 vii6/V
+m29 b1 V b2 vii43
+m30 b1 I6 b2 vii43
+m31 b1 I6 b2 V6
+m32 b1 I b2 V43
+m33 b1 I6
+m34 b1 ii6
+m35 b1 I64
+m36 b1 V42
+m37 b1 I6
+m38 b1 ii6
+m39 b1 I64
+m40 b1 V42
+m41 b1 I b2 vii7/V
+m42 b1 I64 b2 V7
+m43 b1 I b2 vii7/V
+m44 b1 I64 b2 V7
+m51 b3 I
+m54 b1 V65
+m55 b1 vii6
+m56 b1 b-: vii65/V
+m57 b1 Gr+6
+m58 b1 V b3 V7
+m60 b2 i64 b3 V7
+m62 b2 i64 b3 V7
+m64 b1 i6 b2 V64
+m65 b1 i b2 c: It+6
+m66 b1 V b3 V7
+m68 b2 i64 b3 V7
+m70 b2 i64 b3 V7
+m72 b2 i b3 b-: V7
+m74 b2 i b3 A-: V7
+m77 b1 I6
+m78 b1 IV
+m79 b1 vii6
+m80 b1 V/vi
+m81 b1 vi6
+m82 b1 f: iv
+m83 b1 vii7/V
+m84 b1 V
+m85 b1 i64
+m86 b1 V
+m87 b1 i64 b2 vii/V
+m88 b1 V
+m89 b1 i64
+m90 b1 V7
+m91 b1 i64 b2 vii/V
+m92 b1 V7
+m93 b1 i64 b2 vii/V
+m94 b1 V7
+m95 b1 i64 b2 vii/V
+m96 b1 V
+m98 b1 bII64
+m99 b1 iv
+m100 b1 V42
+m101 b1 i6
+m102 b1 V42/bVII
+m103 b1 V43
+m104 b1 i
+m106 b1 V65
+m108 b1 i
+m109 b1 V43
+m110 b1 i6 b2 vii6
+m111 b1 V b3 i
+m114 b1 b-: VI
+m115 b1 ii6
+m116 b1 V42
+m117 b1 i6
+m118 b1 f: V43/V
+m119 b1 vii65/V
+m120 b1 V
+m121 b1 V7 b2 VI
+m122 b1 V b3 V7
+m124 b2 i64 b3 V7
+m126 b2 i64 b3 V7
+m128 b1 i6 b2 vii6
+m129 b1 i b2 vii6/V
+m130 b1 V b2 vii6/V
+m131 b1 V b2 vii43
+m132 b1 i6 b2 vii43
+m133 b1 i6 b2 V6
+m134 b1 i b2 V43
+m135 b1 i6
+m136 b1 ii6
+m137 b1 i64
+m138 b1 V42
+m139 b1 i6
+m140 b1 ii6
+m141 b1 i64
+m142 b1 V b2 V7
+m143 b1 i b2 Gr+6
+m144 b1 i64 b2 V7
+m145 b1 i b2 Gr+6
+m146 b1 i64 b2 V7
+m147 b1 i b2 Gr+6
+m148 b1 i64 b2 V42
+m149 b1 V65/iv
+m150 b1 iv
+m151 b1 V65/III
+m152 b1 III b3 VI65
+m153 b1 ii b1 V65 b2 i b3 VI
+m154 b1 ii65 b2 V7
+m155 b1 i
