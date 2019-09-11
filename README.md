@@ -26,4 +26,4 @@ The columns represent onset, offset, key, degree, quality, inversion, Roman nume
 
 For users who are interested in human analyses of musical form, you are recommended to convert the annotations in the BPS-FH dataset by the parser provided in https://github.com/MarkGotham/Taking-Form.
 
-An converted example is provided in the folder "Taking Form."
+A converted example is provided in the folder "Taking Form."
